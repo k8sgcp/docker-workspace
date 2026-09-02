@@ -1,54 +1,24 @@
+# Build Stage (Compile static binary)
 
-# ==========================================
-# STAGE 1: Build the Go Binary
-# ==========================================
-
-FROM golang:1.22-alpine AS builder
-
-
-# Set the working directory inside container
-
+FROM golang:1.22-alpine as builder
 WORKDIR /app
-
-
-# Copy dependency files first
-
 COPY go.mod ./
+RUN go mod download
+COPY . .
 
 
 
-# Copy the source code
-
-COPY main.go .
-
-
-# Build a statically linked Go Binary
-
-RUN CGO_ENABLED=0 GOOS=linux go build -o server main.go
+# CGO_ENABLED=0 builds a statically linked binary (no dynamic C libraries)
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o main .
 
 
-# ==========================================
-# STAGE 2: Minimal Production Image
-# ==========================================
-
+# # Production Stage (Ultra-minimal runtime)
 FROM scratch
-
-
-# Set the working directory in final image
-
-WORKDIR /root/
-
-
-# Copy the compiled binary from stage 1
-
-COPY --from=builder /app/server .
-
-
-# Export 8080
-
+WORKDIR /
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /app/main /main
 EXPOSE 8080
+ENTRYPOINT ["/main"]
 
 
-# Run the binary
 
-ENTRYPOINT ["./server"]
