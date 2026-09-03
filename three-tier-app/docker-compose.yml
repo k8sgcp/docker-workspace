@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Tier 1: Database
+  db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: appsecret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Tier 2: Backend API
+  backend:
+    build: ./backend
+    container_name: flask-backend
+    environment:
+      DB_HOST: db
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: appsecret
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend-network
+      - frontend-network
+
+  # Tier 3: Frontend / Reverse Proxy
+  frontend:
+    build: ./frontend
+    container_name: nginx-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - frontend-network
+
+# Isolated networks for security (DB is not exposed to Frontend directly)
+networks:
+  frontend-network:
+    driver: bridge
+  backend-network:
+    driver: bridge
+
+# Persistent database storage
+volumes:
+  postgres_data:
