@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3-Tier Docker App</title>
+</head>
+<body>
+    <h1>3-Tier Application Status</h1>
+    <button onclick="fetchData()">Check Database Connection</button>
+    <pre id="result"></pre>
+
+    <script>
+        function fetchData() {
+            fetch('/api/data')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+                })
+                .catch(err => {
+                    document.getElementById('result').innerText = 'Error connecting to backend';
+                });
+        }
+    </script>
+</body>
+</html>
