@@ -1,45 +1,41 @@
-# --- Stage 1: Build Stage ---
+# ==========================================
+# Stage 1: Build Stage (JDK + Maven)
+# ==========================================
 
-FROM eclipse-temurin:17-jdk-alpine AS builder
-
-
-# Setting up work directory
+FROM gradle:8.14-jdk17 AS builder
 
 WORKDIR /app
 
 
-# Copy source code and compile
+# Copy build configuration files first for layer caching
+COPY build.gradle settings.gradle ./
+COPY gradle ./gradle
 
-COPY Main.java .
-RUN javac Main.java && jar cfe app.jar Main Main.class
+
+# Copy source code and build the executable JAR
+COPY src ./src
+RUN gradle bootJar --no-daemon
 
 
-# # --- Stage 2: Runtime Stage ---
-
+# ==========================================
+# Stage 2: Runtime Stage (JRE only)
+# ==========================================
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-
-# Create a non-root user and group for security best practices
-
+# Create a non-root system user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 
-# Copy compiled JAR from builder stage
+# Copy the built JAR from the Gradle build output folder
+COPY --from=builder /app/build/libs/*.jar app.jar
 
-COPY --from=builder /app/app.jar /app/app.jar
 
-
-# Set ownership to non root user
-
+# Change ownership to non-root user
 RUN chown -R appuser:appgroup /app
-
-
 USER appuser
 
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
-
