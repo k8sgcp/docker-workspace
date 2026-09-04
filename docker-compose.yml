@@ -1,34 +1,56 @@
 version: '3.8'
 
 services:
-  # 1. Database Service
-  postgres_db:
-    image: postgres:15-alpine
-    container_name: dev_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: secretpassword
-      POSTGRES_DB: main_db
+  web-server:
+    image: nginx:alpine
+    container_name: 3tier-web
+    ports:
+      - "80:80"
     volumes:
-      - db_data:/var/lib/postgresql/data # Persists data on host
-    ports:
-      - "5432:5432"
-
-  # 2. Web API Service
-  web_api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: dev_web_api
-    restart: unless-stopped
-    ports:
-      - "8000:8000" # Host:Container
-    environment:
-      - DATABASE_URL=postgresql://app_user:secretpassword@postgres_db:5432/main_db
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - postgres_db # Controls startup order
+      - app-server
+    networks:
+      - frontend-net
 
-# Persistent Volumes Declaration
+  app-server:
+    build:
+      context: ./java-app
+      dockerfile: Dockerfile
+    container_name: 3tier-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-server:5432/appdb
+      SPRING_DATASOURCE_USERNAME: appuser
+      SPRING_DATASOURCE_PASSWORD: apppassword
+    depends_on:
+      db-server:
+        condition: service_healthy
+    networks:
+      - frontend-net
+      - backend-net
+
+  db-server:
+    image: postgres:15-alpine
+    container_name: 3tier-db
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppassword
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
-  db_data:
+  pgdata:
+
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
