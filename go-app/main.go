@@ -7,8 +7,8 @@ import (
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hi from inside a docker container!")
+		fmt.Fprintln(w, "Hello from docker container running on Linux Mint!")
 	})
-	fmt.Println("Local Server starting on :8080")
+	fmt.Println("Linux Server starting on :8080")
 	http.ListenAndServe(":8080", nil)
 }
