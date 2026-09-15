@@ -1,21 +1,35 @@
 const express = require('express');
+const { Pool } = require('pg');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Hello from Node.js Local Inner Loop!',
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  });
+// Database connection pool using environment variables
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_NAME || 'devops_db'
 });
 
-// Handle graceful shutdown signals from Docker
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  process.exit(0);
+app.get('/', async (req, res) => {
+  try {
+    const dbResult = await pool.query('SELECT NOW()');
+    res.json({
+      status: 'healthy',
+      message: 'Node.js connected to PostgreSQL successfully!',
+      dbTime: dbResult.rows[0].now
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to connect to PostgreSQL',
+      error: err.message
+    });
+  }
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });
