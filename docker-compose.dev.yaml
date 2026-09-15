@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder  # Targets builder stage where dev dependencies & tools exist
+    command: npm run dev  # Overrides default CMD to run in watch mode
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app                  # Bind mount local directory into container
+      - /app/node_modules        # Anonymous volume to protect container node_modules
+    environment:
+      - PORT=3000
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=devops_db
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: devops_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
