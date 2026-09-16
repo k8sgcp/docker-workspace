@@ -6,13 +6,13 @@ public class Main {
     public static void main(String[] args) throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
         server.createContext("/", exchange -> {
-            String response = "Hello from inside a container!";
+            String response = "Hello from java app running inside docker container";
             exchange.sendResponseHeaders(200, response.length());
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
             os.close();
         });
-        System.out.println("Server starting on :8080");
+        System.out.println("Linux Server starting on :8080");
         server.start();
     }
 }
