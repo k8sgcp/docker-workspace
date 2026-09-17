@@ -1,12 +1,9 @@
-# ---------- Stage 1: build ----------
-# Use a full (non-slim) image here only if you need build tools (gcc, etc.)
-# for packages with C extensions. Otherwise slim is fine for build too.
+# --------- Stage 1: builder ---------
 FROM python:3.12-slim AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Copy ONLY requirements first -> this layer only rebuilds when deps change,
-# not on every code change. This is the single biggest caching win.
+# Copy requirements file into the builder stage first
 COPY requirements.txt .
 
 # Install into a local target dir so we can copy just the installed
@@ -14,8 +11,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 
-
-# ---------- Stage 2: runtime ----------
+# --------- Stage 2: runtime ---------
 FROM python:3.12-slim
 
 # Create a non-root user to run the app (never run as root in production)
@@ -34,13 +30,11 @@ COPY . .
 RUN chown -R appuser:appuser /app
 USER appuser
 
-# Document the port the app listens on (doesn't actually publish it -
-# that's what -p / ports: does at run time)
-EXPOSE 8000
+# Document the port the app listens on
+EXPOSE 8080
 
 # Environment variables sensible for containerized Python
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Adjust to your actual entrypoint (gunicorn/uvicorn/flask run/etc.)
 CMD ["python", "app.py"]
