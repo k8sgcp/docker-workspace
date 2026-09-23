@@ -1,43 +1,41 @@
 version: '3.8'
 
 services:
-  web:
+  dotnet-service:
     build:
-      context: .
-      dockerfile: Dockerfile
-      target: builder  # Targets builder stage where dev dependencies & tools exist
-    command: npm run dev  # Overrides default CMD to run in watch mode
+      context: ./dotnet-app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dotnet-app:/src
+    environment:
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+
+  go-service:
+    build:
+      context: ./go-app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./go-app:/app
+
+  python-service:
+    build:
+      context: ./python-app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./python-app:/app
+
+  node-service:
+    build:
+      context: ./nodejs-app
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     volumes:
-      - .:/app                  # Bind mount local directory into container
-      - /app/node_modules        # Anonymous volume to protect container node_modules
-    environment:
-      - PORT=3000
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=devops_db
-    depends_on:
-      db:
-        condition: service_healthy
-
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: devops_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  pgdata:
+      - ./node-app:/app
+      - /app/node_modules # Avoid overwriting container node_modules with host path
