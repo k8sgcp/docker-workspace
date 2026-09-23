@@ -20,10 +20,10 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore Dependencies
-        run: dotnet restore dotnet-app/MyDotNetApp.csproj
+        run: dotnet restore dotnet-app/MyDotnetApp.csproj
 
       - name: Build Solution
-        run: dotnet build dotnet-app/MyDotNetApp.csproj --no-restore -c Release
+        run: dotnet build dotnet-app/MyDotnetApp.csproj --no-restore -c Release
 
       - name: Build Multi-Stage Production Docker Image
         run: |
