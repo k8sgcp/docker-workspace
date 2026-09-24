@@ -19,6 +19,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Code Formatting Check
+        run: dotnet format --verify-no-changes
+
       - name: Restore Dependencies
         run: dotnet restore dotnet-app/MyDotnetApp.csproj
 
@@ -29,12 +32,12 @@ jobs:
         run: |
           docker build -t dotnet-service:prod -f dotnet-app/Dockerfile dotnet-app/
 
-      - name: Run Trivy Security Scan
+      - name: Run Trivy Security Gate
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'dotnet-service:prod'
           format: 'table'
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
