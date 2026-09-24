@@ -1,4 +1,4 @@
-name: .NET Outer Loop CI Pipeline
+  name: .NET Outer Loop CI Pipeline
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   packages: write
 
 jobs:
-  build-test-scan-publish:
+  build-test-scan:
     runs-on: ubuntu-latest
 
     steps:
